@@ -195,6 +195,27 @@ final class SiteController: UIViewController, WKNavigationDelegate, WKUIDelegate
         return popup
     }
 
+    // In the site's six languages, as the rest of the app's own words.
+    private static let cancelTitle: String = {
+        let titles = ["ru": "Отмена", "de": "Abbrechen", "es": "Cancelar", "tr": "İptal", "zh": "取消"]
+        let language = Locale.preferredLanguages.first.map { String($0.prefix(2)) } ?? "en"
+        return titles[language] ?? "Cancel"
+    }()
+
+    // The site's alert() and confirm(), as the system's own dialogs.
+    func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler() })
+        (presentedViewController ?? self).present(alert, animated: true)
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: Self.cancelTitle, style: .cancel) { _ in completionHandler(false) })
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) })
+        (presentedViewController ?? self).present(alert, animated: true)
+    }
+
     func webViewDidClose(_ webView: WKWebView) {
         if webView !== site { presentedViewController?.dismiss(animated: true) }
     }
