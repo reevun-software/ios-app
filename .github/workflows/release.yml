@@ -1,15 +1,24 @@
-name: Build
+name: Release
 
-# Builds Reevun for iPhone and iPad and opens it in the simulator to check
-# it starts. Publishing (TestFlight, the App Store) needs the Apple Developer
-# account's signing. Runs on every change here and on every change to
-# app-core (app-core sends "core-updated").
+# Builds Reevun for iPhone and iPad, opens it in the simulator to check it
+# starts, and publishes Reevun.ipa as a GitHub release: unsigned, for
+# installing on one's own iPhone with a tool that signs it with one's Apple
+# ID (Sideloadly, Xcode). TestFlight and the App Store need the Apple
+# Developer account's signing. Runs on every change here and on every change
+# to app-core (app-core sends "core-updated").
 on:
   push:
     branches: [main]
   repository_dispatch:
     types: [core-updated]
   workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -59,3 +68,20 @@ jobs:
           xcrun simctl io "$DEVICE" screenshot screen.png
           sips -Z 900 -s format jpeg -s formatOptions 60 screen.png --out screen.jpg >/dev/null
           echo "SCREEN-BEGIN"; base64 -b 1000 -i screen.jpg; echo "SCREEN-END"
+      - name: Build for iPhone
+        working-directory: ios-app
+        run: >
+          xcodebuild -project Reevun.xcodeproj -scheme Reevun -configuration Release
+          -sdk iphoneos -destination "generic/platform=iOS" -derivedDataPath build
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      # An .ipa is the app in a Payload folder, zipped. Always Reevun.ipa, so
+      # .../releases/latest/download/Reevun.ipa is a permanent download link.
+      - name: Publish
+        working-directory: ios-app
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/Reevun.app Payload/
+          zip -qr Reevun.ipa Payload
+          gh release create "v$VERSION" --title "Reevun $VERSION" --notes "" --latest Reevun.ipa
