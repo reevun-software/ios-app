@@ -21,9 +21,10 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
     // main thread.
     func start(done: @escaping (String?) -> Void) {
         session?.cancel()
-        let verifier = Self.random(32)
+        guard let verifier = Self.random(32), let state = Self.random(24) else {
+            return done(nil)
+        }
         let challenge = Self.encode(Data(SHA256.hash(data: Data(verifier.utf8))))
-        let state = Self.random(24)
         var url = URLComponents(url: Site.idURL.appendingPathComponent("app"), resolvingAgainstBaseURL: false)!
         url.queryItems = [URLQueryItem(name: "challenge", value: challenge), URLQueryItem(name: "state", value: state)]
         let session = ASWebAuthenticationSession(url: url.url!, callbackURLScheme: "reevun") { callback, _ in
@@ -61,9 +62,9 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
         }.resume()
     }
 
-    private static func random(_ count: Int) -> String {
+    private static func random(_ count: Int) -> String? {
         var bytes = [UInt8](repeating: 0, count: count)
-        _ = SecRandomCopyBytes(kSecRandomDefault, count, &bytes)
+        guard SecRandomCopyBytes(kSecRandomDefault, count, &bytes) == errSecSuccess else { return nil }
         return encode(Data(bytes))
     }
 
