@@ -3,7 +3,7 @@ import UIKit
 import WebKit
 
 final class SiteController: UIViewController, WKNavigationDelegate, WKUIDelegate {
-    private enum SiteState: String { case loading, offline, browser, ready }
+    private enum SiteState: String { case loading, offline, browser, update, ready }
 
     // The loading screen stays at least this long, so it fades instead of
     // flashing; the fade itself takes `fade`.
@@ -36,7 +36,10 @@ final class SiteController: UIViewController, WKNavigationDelegate, WKUIDelegate
         site.isOpaque = false
         fill(site)
         showOverlay(.loading)
-        dashboard()
+        // With a newer version out, the site doesn't open until it's installed.
+        NewVersion.check(platform: "ios") { [weak self] newer in
+            if newer { self?.report(.update) } else { self?.dashboard() }
+        }
     }
 
     // Between the system bars, as the site expects.
@@ -102,6 +105,7 @@ final class SiteController: UIViewController, WKNavigationDelegate, WKUIDelegate
         case "cancelSignIn":
             signIn.cancel()
             showSite()
+        case "getUpdate": UIApplication.shared.open(Site.url.appendingPathComponent("download/ios"))
         default: break
         }
         return nil
