@@ -161,7 +161,7 @@ final class SiteController: UIViewController, WKNavigationDelegate, WKUIDelegate
         guard webView === site else { return }
         failed = true
         let error = error as NSError
-        let stopped = (error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled) || (error.domain == WKError.errorDomain && error.code == 102)
+        let stopped = (error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled) || (error.domain == "WebKitErrorDomain" && error.code == 102)
         if !stopped { showOverlay(.offline) }
     }
 
