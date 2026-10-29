@@ -199,11 +199,10 @@ final class SiteController: UIViewController, WKNavigationDelegate, WKUIDelegate
         return popup
     }
 
-    // In the site's six languages, as the rest of the app's own words.
+    // In the site's two languages, as the rest of the app's own words.
     private static let cancelTitle: String = {
-        let titles = ["ru": "Отмена", "de": "Abbrechen", "es": "Cancelar", "tr": "İptal", "zh": "取消"]
         let language = Locale.preferredLanguages.first.map { String($0.prefix(2)) } ?? "en"
-        return titles[language] ?? "Cancel"
+        return language == "ru" ? "Отмена" : "Cancel"
     }()
 
     // The site's alert() and confirm(), as the system's own dialogs.
